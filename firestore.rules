@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdminOfMess(messId) {
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/messAdmins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/messAdmins/$(request.auth.uid)).data.messId == messId)
+      );
+    }
+
+    // Messes:
+    // Signed-in users can read the mess catalog (for selection, view).
+    // An admin can create their mess, or update their own mess.
+    match /messes/{messId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        isAdminOfMess(messId) ||
+        (exists(/databases/$(database)/documents/messAdmins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/messAdmins/$(request.auth.uid)).data.messId == messId)
+      );
+      allow delete: if false;
+    }
+
+    // Mess Administrators:
+    // User can manage their own admin record, or admins of the same mess can read staff
+    match /messAdmins/{adminId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == adminId ||
+        (resource != null && resource.data.uid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow create: if isSignedIn() && (
+        request.resource.data.uid == request.auth.uid
+      );
+      allow update: if isSignedIn() && (
+        (resource != null && resource.data.uid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow delete: if false;
+    }
+
+    // Students:
+    // A student can read/update their own profile. An admin of that mess can view & update student status.
+    match /students/{studentId} {
+      allow get: if isSignedIn() && (
+        request.auth.uid == studentId ||
+        (resource != null && resource.data.uid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn() && (
+        request.auth.uid == studentId ||
+        (resource != null && resource.data.uid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow delete: if isSignedIn() && (
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+    }
+
+    // Attendance:
+    // Keyed by messId_date_studentUid
+    // A student can read and write only their own record.
+    // The mess admin can read and update/archive attendance records for their mess.
+    match /attendance/{attendanceId} {
+      allow get: if isSignedIn() && (
+        (resource != null && resource.data.studentUid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && (
+        request.resource.data.studentUid == request.auth.uid ||
+        isAdminOfMess(request.resource.data.messId)
+      );
+      allow update: if isSignedIn() && (
+        (resource != null && resource.data.studentUid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow delete: if isSignedIn() && (
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+    }
+
+    // Attendance Log (audit trail):
+    match /attendanceLog/{logId} {
+      allow read: if isSignedIn() && (
+        (resource != null && resource.data.studentUid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Menus:
+    // All signed in students of that mess can read. Admin of the mess can create/update.
+    match /menus/{menuId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && (
+        isAdminOfMess(request.resource.data.messId) ||
+        (exists(/databases/$(database)/documents/messAdmins/$(request.auth.uid)))
+      );
+      allow delete: if isSignedIn() && (
+        resource != null && isAdminOfMess(resource.data.messId)
+      );
+    }
+
+    // Join Requests:
+    match /joinRequests/{requestId} {
+      allow read: if isSignedIn() && (
+        (resource != null && resource.data.studentUid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow create: if isSignedIn() && request.resource.data.studentUid == request.auth.uid;
+      allow update: if isSignedIn() && (
+        (resource != null && resource.data.studentUid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+      allow delete: if isSignedIn() && (
+        (resource != null && resource.data.studentUid == request.auth.uid) ||
+        (resource != null && isAdminOfMess(resource.data.messId))
+      );
+    }
+  }
+}

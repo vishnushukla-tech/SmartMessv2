@@ -1,0 +1,154 @@
+{
+  "entities": {
+    "Mess": {
+      "title": "Mess",
+      "description": "Hostel or institutional dining facility",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "institution": { "type": "string", "maxLength": 120 },
+        "city": { "type": "string", "maxLength": 80 },
+        "contact": { "type": "string", "maxLength": 50 },
+        "joinMode": { "type": "string", "enum": ["open", "code", "approval"] },
+        "messCode": { "type": "string", "maxLength": 20 },
+        "mealTimings": { "type": "object" },
+        "activeStudentCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "institution", "city", "joinMode"]
+    },
+    "MessAdmin": {
+      "title": "MessAdmin",
+      "description": "Administrator account associated with a specific mess",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "messId": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "messId", "name", "email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student diner profile and current mess membership status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "rollNo": { "type": "string", "maxLength": 40 },
+        "email": { "type": "string", "maxLength": 120 },
+        "messId": { "type": "string" },
+        "joinStatus": { "type": "string", "enum": ["none", "pending", "joined", "blocked"] },
+        "dietaryPref": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "name", "rollNo", "email", "joinStatus"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily student meal headcount attendance record",
+      "type": "object",
+      "properties": {
+        "messId": { "type": "string" },
+        "date": { "type": "string" },
+        "studentUid": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentRollNo": { "type": "string" },
+        "breakfast": { "type": "boolean" },
+        "lunch": { "type": "boolean" },
+        "snacks": { "type": "boolean" },
+        "dinner": { "type": "boolean" },
+        "lastSubmittedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["messId", "date", "studentUid", "breakfast", "lunch", "snacks", "dinner"]
+    },
+    "AttendanceLog": {
+      "title": "AttendanceLog",
+      "description": "Audit trail log entry for headcount changes",
+      "type": "object",
+      "properties": {
+        "messId": { "type": "string" },
+        "date": { "type": "string" },
+        "studentUid": { "type": "string" },
+        "studentName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["messId", "date", "studentUid", "action", "timestamp"]
+    },
+    "Menu": {
+      "title": "Menu",
+      "description": "Live daily menu items for a mess",
+      "type": "object",
+      "properties": {
+        "messId": { "type": "string" },
+        "date": { "type": "string" },
+        "breakfast": { "type": "array" },
+        "lunch": { "type": "array" },
+        "snacks": { "type": "array" },
+        "dinner": { "type": "array" },
+        "specialNotice": { "type": "string" },
+        "published": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["messId", "date", "published"]
+    },
+    "JoinRequest": {
+      "title": "JoinRequest",
+      "description": "Student request to join a mess facility",
+      "type": "object",
+      "properties": {
+        "messId": { "type": "string" },
+        "studentUid": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentRollNo": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "requestedAt": { "type": "string" },
+        "resolvedAt": { "type": "string" }
+      },
+      "required": ["messId", "studentUid", "studentName", "status"]
+    }
+  },
+  "firestore": {
+    "/messes/{messId}": {
+      "schema": "Mess",
+      "description": "Collection of dining messes and their configurations"
+    },
+    "/messAdmins/{adminId}": {
+      "schema": "MessAdmin",
+      "description": "Admin accounts keyed by admin uid or composite id"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student profiles and current mess status"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Daily meal check-in records keyed by messId_date_studentUid"
+    },
+    "/attendanceLog/{logId}": {
+      "schema": "AttendanceLog",
+      "description": "Headcount audit trail log documents"
+    },
+    "/menus/{menuId}": {
+      "schema": "Menu",
+      "description": "Daily menu documents keyed by messId_date"
+    },
+    "/joinRequests/{requestId}": {
+      "schema": "JoinRequest",
+      "description": "Join requests submitted by students to join a mess"
+    }
+  }
+}

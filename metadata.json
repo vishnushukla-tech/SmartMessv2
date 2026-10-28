@@ -1,0 +1,6 @@
+{
+  "name": "SmartMess",
+  "description": "Automated Kitchen Headcount Platform for hostels and messes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
